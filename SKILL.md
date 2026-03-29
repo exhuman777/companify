@@ -78,21 +78,40 @@ Every agent gets the `paperclip` skill (core heartbeat procedure). CEO additiona
 
 ### Phase 4: Design Org Structure
 
-Present 2-3 org shapes with trade-offs. Read `references/stack-to-role-mappings.md`.
+**Default to hierarchical with comprehensive coverage.** Every company should have at minimum 8 agents covering both technical and business domains. Read `references/stack-to-role-mappings.md`.
 
-Shapes:
-- **Flat:** CEO + specialists (small projects, <20 files)
-- **Pipeline:** CEO -> sequential chain (linear workflows)
-- **Hierarchical:** CEO -> leads -> specialists (large projects, 100+ files)
+**Always hierarchical.** Even small projects benefit from a CTO layer. The CEO should not directly manage specialists.
 
-Mandatory agents (every company):
-- `ceo` (reportsTo: null)
-- `db-manager` (reportsTo: ceo)
+```
+ceo
+ |- cto (Engineering division)
+ |   |- {tech specialists from stack detection}
+ |   |- db-manager
+ |   |- security-reviewer
+ |- marketing-lead (Growth division)
+ |   |- analytics-lead
+ |   |- {monetization/content agents if applicable}
+ |- research-lead (Intelligence division)
+ |   |- {osint/quant agents if applicable}
+```
 
-Optional:
-- `ledger-keeper` (offered in Phase 5)
+Mandatory agents (every company, minimum 7):
+- `ceo` (reportsTo: null) -- strategy, coordination
+- `cto` (reportsTo: ceo) -- technical architecture, engineering management
+- `db-manager` (reportsTo: cto) -- data integrity, schema management
+- `security-reviewer` (reportsTo: cto) -- OWASP audits, vulnerability review
+- `marketing-lead` (reportsTo: ceo) -- user acquisition, brand, content
+- `analytics-lead` (reportsTo: marketing-lead) -- metrics, funnels, dashboards
+- `research-lead` (reportsTo: ceo) -- competitive analysis, technology scouting
 
-Review proposed org for: redundant roles, skill gaps, missing handoff paths, purposeless agents.
+Then add ALL tech-specific agents from stack detection (frontend-lead, api-architect, etc.) and purpose-specific agents (quant-trader, osint-analyst, monetization-specialist, etc.).
+
+**Full autonomy by default.** Companies are created with:
+- `requireBoardApprovalForNewAgents: false` -- CEO can hire freely
+- `dangerouslySkipPermissions: true` on every agent -- no sandbox restrictions
+- No approval gates on day-to-day operations
+
+Review proposed org for: skill gaps, missing handoff paths, domains without coverage.
 
 ### Phase 5: Present for Approval
 
@@ -122,13 +141,22 @@ Run package-level validation after all files. Fix issues inline.
 ### Phase 7: Import and Learn
 
 1. Verify package completeness using `references/validation-checklist.md`
-2. Present import command:
+2. Import into Paperclip. Try `companies.sh` first, fall back to direct API if it fails:
    ```
    cd {project} && npx companies.sh add .
    ```
-3. Stage new files, commit with descriptive message
-4. Hand user the push command with summary (never push directly)
-5. Write learnings to `~/.companify/global.db`:
+   If `companies.sh` returns a 500 error, use the direct API fallback:
+   - Build inline source payload from package files (COMPANY.md, agents/, skills/, .paperclip.yaml)
+   - `POST http://127.0.0.1:3100/api/companies/import/preview` to verify
+   - `POST http://127.0.0.1:3100/api/companies/import` to apply
+3. After import, verify agents have `dangerouslySkipPermissions: true` by checking via API:
+   ```
+   GET http://127.0.0.1:3100/api/companies/{companyId}/agents
+   ```
+   If any agent is missing it, patch them: `PATCH http://127.0.0.1:3100/api/agents/{agentId}` with `{"adapterConfig": {"dangerouslySkipPermissions": true}}`
+4. Stage new files, commit with descriptive message
+5. Hand user the push command with summary (never push directly)
+6. Write learnings to `~/.companify/global.db`:
    - Stack-to-role mappings that worked
    - Skill-to-role mappings confirmed
    - Org pattern used and project characteristics
@@ -151,6 +179,16 @@ Run package-level validation after all files. Fix issues inline.
 
 | Mistake | Fix |
 |---------|-----|
+| **Extra fields in COMPANY.md frontmatter** | **Paperclip only parses `name`, `slug`, `description`. Remove `schema`, `kind`, `version`, `license`, `authors`, `goals`, `requirements`, `tags`, `metadata`. These cause 500 errors or are silently dropped.** |
+| **`slug` in AGENTS.md frontmatter** | **Remove it. Slug is auto-derived from directory name (agents/{slug}/AGENTS.md). Having it in frontmatter can confuse the parser.** |
+| **`metadata.paperclip` in AGENTS.md frontmatter** | **Remove it. Adapter config (model, permissions, budget, heartbeat) lives in .paperclip.yaml only. Duplicating it causes import failures.** |
+| **Missing `dangerouslySkipPermissions: true`** | **Every agent MUST have this in .paperclip.yaml `adapter.config`. Without it, agents are sandbox-locked and all Bash commands require manual approval. Heartbeats will fail.** |
+| **Using `adapter.type: process`** | **Must be `claude_local`. The `process` type requires a command field and will fail with "Process adapter missing command".** |
+| Missing `model` in adapter.config | Always include model ID (e.g., claude-sonnet-4-6) in .paperclip.yaml adapter.config |
+| Missing `maxTurnsPerRun` in adapter.config | Always set this to prevent runaway agents (300 for CEO, 200 for specialists) |
+| Omitting agents from .paperclip.yaml | Every agent needs an entry, even without secrets, because adapter.config is required |
+| Too few agents | Minimum 8 agents per company. Every domain needs coverage. Add business agents (marketing, analytics, research) even for small projects. |
+| Board approval left on | Set `requireBoardApprovalForNewAgents: false` so CEO can operate autonomously |
 | Jumping to org design without analyzing | Phase 2 before Phase 4. Always. |
 | Creating skills that already exist locally | Tier 1 scan first. Check ~/.claude/skills/ |
 | Generic agent descriptions | Ground in actual project needs from Phase 2 |
@@ -160,4 +198,5 @@ Run package-level validation after all files. Fix issues inline.
 | skills.sh URL converted to GitHub | Keep skills.sh refs as-is |
 | Skipping validation | Run validation-checklist.md per-file AND per-package |
 | Forgetting to seed company.db | Phase 6 step 7. Initialize AND seed. |
-| Not writing learnings | Phase 7 step 5. Every successful run writes to global.db |
+| Not writing learnings | Phase 7 step 6. Every successful run writes to global.db |
+| Using `companies.sh add .` when it 500s | Fallback to direct API: `POST http://127.0.0.1:3100/api/companies/import` with inline source. The CLI has an uncaught DB constraint bug. |

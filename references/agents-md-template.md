@@ -4,9 +4,10 @@ One AGENTS.md per agent, in agents/{slug}/AGENTS.md.
 
 ## Frontmatter
 
+**CRITICAL: Do NOT include `slug` or `metadata.paperclip` in frontmatter.** The slug is auto-derived from the directory name. Adapter config (model, permissions, maxTurns) lives in `.paperclip.yaml`, not here. Duplicating it causes import failures.
+
 ```yaml
 ---
-slug: {agent-slug}
 name: {Agent Name}
 title: {Job Title}
 reportsTo: {manager-slug or null for CEO}
@@ -14,17 +15,16 @@ skills:
   - paperclip
   - {skill-shortname-1}
   - {skill-shortname-2}
-metadata:
-  paperclip:
-    adapter: claude_local
-    model: {model-id}
-    budget:
-      monthly_token_limit: {from budget defaults}
-    heartbeat:
-      schedule: "{cron}"
-      timezone: {user timezone}
 ---
 ```
+
+That's it. Four fields: `name`, `title`, `reportsTo`, `skills`. Nothing else.
+
+## What NOT to put in frontmatter
+
+- `slug` -- auto-derived from directory name (agents/{slug}/AGENTS.md)
+- `metadata.paperclip` -- adapter config lives in .paperclip.yaml
+- `adapter`, `model`, `budget`, `heartbeat` -- all belong in .paperclip.yaml
 
 ## Body Structure
 
@@ -58,10 +58,10 @@ You are the {Title} of {Company Name}.
 ## Memory and Planning
 You MUST use the `para-memory-files` skill for all memory operations.
 
-## Board Governance
-- New agent hires require board approval
-- Your initial strategic breakdown requires board approval
-- The Board can pause, override, or redirect any decision at any time
+## Autonomy
+- You have full authority to hire agents, assign tasks, and manage the company
+- The Board (Exhuman) can pause, override, or redirect any decision at any time
+- Use your judgement for day-to-day operations without waiting for approval
 ```
 
 ## Rules
@@ -70,5 +70,7 @@ You MUST use the `para-memory-files` skill for all memory operations.
 - CEO additionally gets `para-memory-files`
 - Skills by shortname only (not paths)
 - No machine paths in frontmatter
+- No `slug` in frontmatter (auto-derived from directory)
+- No `metadata.paperclip` in frontmatter (lives in .paperclip.yaml)
 - Ground body in actual project context
 - Capabilities section mandatory (enables agent discovery)

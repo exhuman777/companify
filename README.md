@@ -25,20 +25,25 @@
 
 ## What This Is
 
-An agent skill that analyzes any codebase and generates a complete Paperclip agent company package. Reads your project, proposes an org of AI agents with the right skills, writes all the files, sets up a SQLite database, and hands you the import command.
+An agent skill that analyzes any codebase and generates a fully autonomous Paperclip agent company package. Reads your project, builds a hierarchical org of 8+ AI agents with the right skills, writes all the files, sets up a SQLite database, and hands you the import command.
 
-Works with any project. Local folders or GitHub repos. Any language, any framework.
+Works with any project. Local folders or GitHub repos. Any language, any framework. Every company ships with full autonomy: `dangerouslySkipPermissions: true`, no board approval gates, agents free to act.
 
 ```
 your-project/                     companify generates:
   package.json          -->         COMPANY.md
   src/                  -->         agents/ceo/AGENTS.md
-  README.md             -->         agents/db-manager/AGENTS.md
+  README.md             -->         agents/cto/AGENTS.md
+                                    agents/db-manager/AGENTS.md
                                     agents/frontend-lead/AGENTS.md
+                                    agents/marketing-lead/AGENTS.md
+                                    agents/analytics-lead/AGENTS.md
+                                    agents/research-lead/AGENTS.md
+                                    agents/security-reviewer/AGENTS.md
                                     skills/deploy/SKILL.md
+                                    teams/engineering/TEAM.md
                                     .paperclip.yaml
                                     .companify/company.db
-                                    README.md
 ```
 
 ## How It Works
@@ -80,22 +85,35 @@ Parallel agents scan your codebase: directory structure, tech stack, project pur
 
 ### Phase 4: Org Design
 
-Proposes 2-3 org shapes based on project size:
+Always hierarchical. Minimum 8 agents. Every company gets business + tech agents.
 
-| Project Size | Shape | Agents |
-|---|---|---|
-| 1-20 files | Flat | CEO + 2-3 specialists |
-| 20-100 files | Pipeline | CEO -> leads -> specialists |
-| 100+ files | Hierarchical | CEO -> divisions -> leads |
+| Layer | Agents |
+|---|---|
+| CEO | Strategic direction, cross-division coordination |
+| Division Leads | CTO, marketing-lead, research-lead |
+| Specialists | Tech-specific + analytics-lead, db-manager, security-reviewer |
 
 ### Mandatory in Every Company
 
 | Component | Purpose |
 |---|---|
 | `ceo` agent | Orchestrator, owns company goals |
-| `db-manager` agent | Manages SQLite database, data integrity, memory sync |
-| `.companify/company.db` | Per-company SQLite database for entities, runs, validations |
-| `~/.companify/global.db` | Cross-company learning database (gets smarter over time) |
+| `cto` agent | Technical architecture, engineering division |
+| `db-manager` agent | SQLite database, data integrity, memory sync |
+| `security-reviewer` agent | OWASP checks, dependency audit, secrets scan |
+| `marketing-lead` agent | Growth, positioning, distribution |
+| `analytics-lead` agent | Metrics, KPIs, data-driven decisions |
+| `research-lead` agent | Competitive analysis, emerging patterns |
+| `.companify/company.db` | Per-company SQLite database |
+| `~/.companify/global.db` | Cross-company learning database |
+
+### Full Autonomy
+
+Every generated company ships with:
+- `dangerouslySkipPermissions: true` on all agents
+- `requireBoardApprovalForNewAgents: false`
+- `adapter.type: claude_local` (not `process`)
+- Model and turn limits configured per agent
 
 ### Optional: Agent Ledger
 
@@ -134,6 +152,14 @@ Then import into Paperclip:
 
 ```bash
 cd ~/projects/my-app && npx companies.sh add .
+```
+
+If `companies.sh` returns 500, use the direct API:
+
+```bash
+curl -X POST http://localhost:3100/api/companies/import \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/absolute/path/to/my-app"}'
 ```
 
 ## File Map

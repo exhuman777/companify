@@ -5,21 +5,21 @@ Run after every file write (Loop 1) and after all files written (Loop 2).
 ## Loop 1: Per-File Validation
 
 ### COMPANY.md
-- [ ] Has `schema: agentcompanies/v1`
 - [ ] Has `name` (non-empty)
 - [ ] Has `description` (1-1024 chars)
 - [ ] Has `slug` (URL-safe)
-- [ ] Has at least one `goals` entry
+- [ ] Frontmatter has ONLY `name`, `slug`, `description` (no schema, kind, version, license, authors, goals, requirements, tags, metadata)
 - [ ] No placeholder text (TBD, TODO, FIXME)
 - [ ] No machine-local paths or secret values
 - [ ] Body has: overview, tech stack, org structure, workflows
 
 ### AGENTS.md (per agent)
-- [ ] `slug` matches directory name
 - [ ] Has `name`, `title`, `reportsTo` (slug or null)
 - [ ] Has `skills` list with at least `paperclip`
 - [ ] CEO has `para-memory-files` in skills
-- [ ] `metadata.paperclip` has adapter, budget, heartbeat
+- [ ] Frontmatter has ONLY `name`, `title`, `reportsTo`, `skills` (no slug, no metadata.paperclip)
+- [ ] No `slug` field in frontmatter (auto-derived from directory name)
+- [ ] No `metadata.paperclip` block in frontmatter (config lives in .paperclip.yaml)
 - [ ] Body has: Capabilities, What triggers you, What you do, What you produce, Who you hand off to, Safety
 - [ ] Capabilities has 2+ items
 - [ ] No machine paths or secret values
@@ -43,6 +43,10 @@ Run after every file write (Loop 1) and after all files written (Loop 2).
 ### .paperclip.yaml
 - [ ] Has `schema: paperclip/v1`
 - [ ] Agent slugs match agents/ directory
+- [ ] **Every agent has `adapter.config.dangerouslySkipPermissions: true`** (without this, agents are sandbox-locked)
+- [ ] Every agent has `adapter.config.model` set
+- [ ] Every agent has `adapter.config.maxTurnsPerRun` set
+- [ ] No agent entry is omitted (all need adapter.config even without secrets)
 - [ ] Secrets as `{ kind: secret, requirement: ... }`
 - [ ] No actual secret values or absolute paths
 - [ ] Does not duplicate agent instructions
@@ -68,7 +72,8 @@ Run after every file write (Loop 1) and after all files written (Loop 2).
 - [ ] No orphaned skills (every custom skill assigned to 1+ agent)
 - [ ] No skill gaps (every agent has 1+ skill beyond paperclip)
 - [ ] Handoff paths exist (every agent names downstream in "Who you hand off to")
-- [ ] .paperclip.yaml agent count matches agents/ directory
+- [ ] .paperclip.yaml agent count matches agents/ directory (every agent has an entry)
+- [ ] Every agent in .paperclip.yaml has dangerouslySkipPermissions: true
 - [ ] All reportsTo form valid tree (no cycles, no dangling)
 - [ ] Company goals are actionable
 - [ ] If Agent Ledger: every agent has trust/{slug}/TRUST.md
